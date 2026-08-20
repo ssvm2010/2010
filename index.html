@@ -4268,6 +4268,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   // no matter the visitor's own device timezone.
   var BIRTHDAY_UNLOCK_ISO = '2026-11-20T00:00:00+05:30'; // <-- change the date here if needed
   var UNLOCK_TIME = new Date(BIRTHDAY_UNLOCK_ISO).getTime();
+  window.__bdayUnlockTime = UNLOCK_TIME;
 
   // Early-access PIN — client-side only. See note below: this is NOT truly
   // secure since anyone can view the page source. It's a light gate, not a lock.
@@ -4326,7 +4327,10 @@ window.addEventListener('DOMContentLoaded',()=>{
       box.style.animation='none'; void box.offsetWidth; box.style.animation='blShake .4s ease';
     }
   }
-
+window.__bdayForceUnlock = function(){
+  try{ localStorage.setItem(LS_KEY,'1'); }catch(e){}
+  unlockSite();
+};
   function init(){
     lockEl=$('birthdayLock'); cdDays=$('blDays'); cdHours=$('blHours'); cdMins=$('blMins'); cdSecs=$('blSecs');
     note=$('blUnlockedNote'); dot=$('blHiddenDot'); modal=$('blPinModal');
