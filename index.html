@@ -1184,9 +1184,52 @@ html.no-gate .gate{ display:none !important; }
   .wish.is-in .wish__heroWrap::before{ animation:none; opacity:.9; }
   .wish.is-in .wish__heroWrap::after{ animation:none; opacity:0; }
 }
-
-
+.loveDaily-card{background:var(--s1);border:1px solid var(--b2);border-radius:20px;padding:20px;text-align:center;backdrop-filter:blur(14px);max-width:480px;margin:0 auto;}
+.loveDaily-milestone{font-family:var(--fh);font-size:16px;color:var(--g1);margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed var(--b2);}
+.loveDaily-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g2);font-weight:700;margin-bottom:10px;}
+.loveDaily-question{font-family:var(--fh);font-size:19px;color:var(--t1);line-height:1.6;margin-bottom:16px;min-height:30px;}
+.loveDaily-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.loveDaily-yes,.loveDaily-no{padding:11px 26px;border-radius:50px;border:none;font-family:var(--fb);font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;}
+.loveDaily-yes{background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--d1);box-shadow:0 4px 18px rgba(212,168,83,.38);}
+.loveDaily-no{background:var(--s1);border:1px solid var(--b2);color:var(--t2);}
+.loveDaily-yes:disabled,.loveDaily-no:disabled{opacity:.45;cursor:default;transform:none!important;}
+.loveDaily-yes:not(:disabled):active,.loveDaily-no:not(:disabled):active{transform:scale(.95);}
+.loveDaily-status{font-size:12px;color:var(--g1);margin-top:12px;min-height:16px;}
+.loveDaily-admin{position:fixed;inset:0;background:var(--d1);z-index:20000;overflow-y:auto;padding:20px 16px 60px;font-family:var(--fb);}
+.loveDaily-admin h2{font-family:var(--ff);color:var(--g1);margin-bottom:14px;}
+.loveDaily-admin .adm-sum{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:18px;}
+.loveDaily-admin .adm-sum div{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:10px;font-size:12px;color:var(--t2);}
+.loveDaily-admin .adm-row{padding:8px 10px;border-bottom:1px solid var(--b1);font-size:12px;color:var(--t2);}
+.loveDaily-admin input{max-width:280px;margin:6px 0;}
 </style>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import {
+    getDatabase, ref, set, get, onValue
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBSVuH1Hiw0fx1UQrQPTxn3dV-WTv0aIrw",
+    authDomain: "hbdshy-ad200.firebaseapp.com",
+    databaseURL: "https://hbdshy-ad200-default-rtdb.firebaseio.com",
+    projectId: "hbdshy-ad200",
+    storageBucket: "hbdshy-ad200.firebasestorage.app",
+    messagingSenderId: "668473968287",
+    appId: "1:668473968287:web:8acd1b3ca594deacf84aa", // ← verify against console
+    measurementId: "G-11FZKNCJD9"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const db   = getDatabase(app);
+  const auth = getAuth(app);
+
+  // Exposed once, globally, so the daily-question script (loaded later, before
+  // </body>) can use the SAME app/db instead of re-initializing Firebase.
+  window.__bdayFB = { db, ref, set, get, onValue, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut };
+</script>
 </head>
 <body>
 <!-- BIRTHDAY LOCK SYSTEM -->
@@ -1636,6 +1679,18 @@ html.no-gate .gate{ display:none !important; }
       <div style="font-size:9px;text-transform:uppercase;letter-spacing:2.5px;color:var(--t3);margin-bottom:12px;">Next Birthday In</div>
       <div class="bd-cd" id="bdCd"></div>
     </div>
+    <div style="padding:0 16px 26px;position:relative;z-index:2;">
+  <div id="loveDailyQuestion" class="loveDaily-card" style="display:none;">
+    <div class="loveDaily-milestone" id="loveDailyMilestone" style="display:none;"></div>
+    <div class="loveDaily-label">Today's Little Question 💭</div>
+    <div class="loveDaily-question" id="loveDailyQ"></div>
+    <div class="loveDaily-buttons" id="loveDailyBtns">
+      <button class="loveDaily-yes" id="loveDailyYes">YES ❤️</button>
+      <button class="loveDaily-no" id="loveDailyNo">NO</button>
+    </div>
+    <div class="loveDaily-status" id="loveDailyStatus"></div>
+  </div>
+</div>
     <div style="padding:0 16px 34px;position:relative;z-index:2;">
       <div class="card card-gold tc" style="max-width:540px;margin:auto;">
         <div style="font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g2);margin-bottom:13px;font-weight:700;">✦ Birthday Wish Generator</div>
@@ -4290,6 +4345,172 @@ window.addEventListener('DOMContentLoaded',()=>{
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+})();
+</script>
+<script type="module">
+(function(){
+  const { db, ref, set, get, onValue, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut } = window.__bdayFB;
+
+  /* 91 questions, index 0 = Day 1 ... index 90 = Day 91 */
+  const QUESTIONS = [
+    "Innaiku nee happy-ah irundhiya? 😊","Innaiku correct-ah saptiya? 🍽️","Innaiku phone-ku konjam over attention kuduthiya? 😂",
+    "Innaiku konjam tired-ah feel pannuniya? 🥺","Innaiku edhavadhu reason illama smile pannuniya? 👀","Innaiku unna nee konjam care pannuniya? ❤️",
+    "Innaiku oru small happiness unakku kidaichucha? ✨","Innaiku unnecessary-ah kovapattuniya? 😂","Innaiku mirror paathu 'nalla irukken' nu feel pannuniya? 😌",
+    "Innaiku edhavadhu tasty-ah saptiya? 😋","Innaiku yaaravadhu unna sirikka vachangala?","Innaiku konjam naughty-ah irundhiya? 👀",
+    "Innaiku enna miss pannuniya? 🤭","Innaiku en message paathu smile pannuniya? ❤️","Tomorrow-um indha website open panna aasai irukka? 🔐",
+    "Ennai konjam miss pannuriya innaiku? 🥺","Nee ennoda favorite ah? 😏","Enna nenachu chirichiya innaiku? 😆",
+    "Naan illama boring ah irundhicha? 🙄","Unakku enna pudikkuma nu therinjikkalama? 👀","Innaiku nee cute ah irundhiya? 😘",
+    "Ennai kaanamale therinjadhu edhachum irukka? 🤔","Naan sonna joke fun ah irundhicha? 😂","Ennai thookama ninachiya night la? 🌙",
+    "Nee ennai teasing panna aasaiya? 😜","Namma next video call eppo? 📱","Innaiku unna yaaravadhu compliment pannangala? ✨",
+    "Ennai photo la paatha smile vanthucha? 📸","Naan illama food nalla irundhicha? 🍜","Yaaru unna azhaga nu sonna last ah? 💗",
+    "Namma first conversation ninaikkiriya? 💭","Enna feeling irukku ippo ennai pathi nenachaa? 💓","Nammaloda oru cute memory sollu manasula? 🌸",
+    "Enna moment la naan special nu unakku thonichu? ✨","Unakku ennai pathi favorite memory enna? 📸","Naan first ah 'I like you' sonna ninaivu irukka? 😳",
+    "Namma together irundha best day edhu? 🌞","Ennai pathi yosichu tears vantha experience irukka? 🥹","Enna nenachaa naan konjam vachurken nu feel aagum? 💖",
+    "Unakku pidicha namma old chat edhu? 💬","Ennoda oru habit unakku pudikkuma? 😊","Nee ennai first paatha impression enna irundhichu? 👀",
+    "Namma relationship la best change enna? 🌱","Enna sonna unakku ennai nenappu varum? 🗣️","Innaiku oru pazhaya memory nenaichaayaa? 🎞️",
+    "Distance ah irunthalum enna feel pannuriya namma pathi? 🌍","Innaiku video call panna manasu irukka? 📞","Konjam tiredness irundha rest edukkiriya? 😴",
+    "Ennai miss panna neram eppo adhigama irukku? ⏳","Namma next meet eppo nu wait pannuriya? 🚂","Unakku health nalla irukka innaiku? 🩹",
+    "Naan illama sad ah irundha yaru irundhanga kூடа? 💗","Distance namma bond ah strong panichaacha? 💪","Innaiku edhachum stress irundhicha? 🌧️",
+    "Ennai kandippa miss pannina naal edhu? 🥺","Namma call la pesradhu sufficient ah irukka? ☎️","Konjam sleep kammiya irukka recently? 🌙",
+    "Distance na kashtama irundhalum yean continue pannuriya? ❤️‍🩹","Naan kavanikkama vitta edhachum irukka? 🤍","Namma distance konjam kammi aagum bodhu enna feel aagum? 🛬",
+    "Future la namma eppadi irukkanum nu nenaikkiriya? 🌈","Nammalu together travel pannanum nu edhavadhu place irukka? ✈️","10 years kalichu namma eppadi irupom nu nenachadhu unda? ⏳",
+    "Enna goal namma ondra achieve pannanum nu nenaikkiriya? 🎯","Namma future house eppadi irukkanum nu kனாவு paathadhu unda? 🏡","Enna oru surprise namma future la plan pannalam? 🎁",
+    "Unakku evlo pasangal/kutties venum nu nenachadhu unda? 👶","Namma next trip eppo poganum nu plan pannalama? 🗺️","Enna oru dream namma sேர்ந்து achieve pannanum? 🌟",
+    "Future la nee enna aaga aasaipaduriya? 💼","Namma bond innum epdi strong pannalam? 🔗","Enakku unnoda future eppadi irukkum nu theriyuma? 🥰",
+    "Namma anniversary eppadi celebrate pannanum? 🎉","Enna oru habit namma iruvarum together develop pannalam? 🌿","75 naala aachu, namma bond eppadi feel aagudhu? 💞",
+    "Ennai pathi unakku deep ah enna feel irukku? 💗","Naan illama irundha life eppadi irukkum nu nenachadhu unda? 🌫️","Ennai evlo trust pannuriya? 🤝",
+    "Unakku ennoda konjam weakness theriyuma? 🥲","Ennai pathi oru secret nee vachurukiya? 🤫","Namma relationship la unakku pidichadhu enna? 💫",
+    "Ennai pathi yosichu oru kanneer vantha naal irukka? 😢","Naan kashtapadum bodhu enna feel pannuriya? 🫂","Ennai pathi unga family ku theriyuma? 👨‍👩‍👧",
+    "Nee ennai edhukku thеrinjaanum nu feel pannuriya? 💌","Ennai pathi oru vaakku kudukka mudiyuma? 🤞","Namma relationship ah yean unakku special nu thonuchu? ✨",
+    "Ennai pathi konjam bayama irukka edhavadhu? 😌","Naan unakku enna kudukka mudiyum nu nenaikkiriya? 🎁",
+    "One more day… ready? 🔐", // Day 90 slot — overridden below anyway
+    "91 days.\n91 little questions.\nBut only one answer really matters.\n\nAfter everything…\nWould you choose me again? ❤️"
+  ];
+
+  const MILESTONES = { 30: "30 days already… and you're still here. ❤️", 60: "Only 31 days left… 🔐", 75: "75 days… still choosing? ❤️" };
+
+  /* ---- day index, bridged off the SAME unlock date used by the lock screen ---- */
+  // window.__bdayUnlockTime is exposed in Step 7 from the birthday-lock script's own UNLOCK_TIME.
+  function getDayIndex(){
+    const unlock = window.__bdayUnlockTime;
+    if (!unlock) return 1; // lock script not loaded yet — safe fallback
+    const start = unlock - 91*86400000;
+    const idx = Math.floor((Date.now() - start) / 86400000) + 1;
+    return Math.min(91, Math.max(1, idx));
+  }
+  function dayKey(n){ return 'day' + String(n).padStart(2,'0'); }
+
+  const isAdmin = new URLSearchParams(location.search).has('admin');
+
+  /* ================= GIRLFRIEND-FACING UI ================= */
+  function initGirlfriendUI(){
+    const day = getDayIndex();
+    const key = dayKey(day);
+    const card = document.getElementById('loveDailyQuestion');
+    const qEl = document.getElementById('loveDailyQ');
+    const yesBtn = document.getElementById('loveDailyYes');
+    const noBtn  = document.getElementById('loveDailyNo');
+    const statusEl = document.getElementById('loveDailyStatus');
+    const msEl = document.getElementById('loveDailyMilestone');
+    if (!card) return;
+    card.style.display = 'block';
+
+    let question = QUESTIONS[day-1];
+    if (day === 90) question = "One more day… ready? 🔐";
+    if (day === 91) question = QUESTIONS[90];
+    qEl.textContent = question;
+
+    if (MILESTONES[day]) { msEl.textContent = MILESTONES[day]; msEl.style.display='block'; }
+
+    function lockButtons(answer){
+      yesBtn.disabled = true; noBtn.disabled = true;
+      statusEl.textContent = day===90 ? "Tomorrow. ❤️" : (answer==='YES' ? "Answer saved 🔐" : "Okay… your answer is safe with me. ❤️");
+    }
+
+    async function submit(answer){
+      yesBtn.disabled = true; noBtn.disabled = true;
+      statusEl.textContent = 'Saving…';
+      try {
+        const nodeRef = ref(db, 'dailyAnswers/' + key);
+        const existing = await get(nodeRef);
+        if (existing.exists()) { lockButtons(existing.val().answer); return; }
+        await set(nodeRef, {
+          question, answer, timestamp: Date.now(),
+          date: new Date().toLocaleString()
+        });
+        lockButtons(answer);
+        if (day === 91 && answer === 'YES' && window.__bdayForceUnlock) window.__bdayForceUnlock();
+      } catch (e) {
+        statusEl.textContent = 'Something went wrong. Please try again. ❤️';
+        yesBtn.disabled = false; noBtn.disabled = false;
+      }
+    }
+
+    yesBtn.onclick = () => submit('YES');
+    noBtn.onclick  = () => submit('NO');
+
+    // reload saved state on refresh / reopen — same day only
+    onValue(ref(db, 'dailyAnswers/' + key), (snap) => {
+      if (snap.exists()) lockButtons(snap.val().answer);
+    }, { onlyOnce: true });
+  }
+
+  /* ================= ADMIN DASHBOARD (?admin) ================= */
+  function initAdmin(){
+    const wrap = document.createElement('div');
+    wrap.className = 'loveDaily-admin';
+    wrap.innerHTML = `
+      <div id="admLogin">
+        <h2>Admin Login</h2>
+        <input id="admEmail" type="email" placeholder="Email"><br>
+        <input id="admPass" type="password" placeholder="Password"><br>
+        <button class="btn btn-gold btn-sm" id="admLoginBtn">Sign in</button>
+        <div id="admErr" style="color:#ff8080;font-size:12px;margin-top:8px;"></div>
+      </div>
+      <div id="admDash" style="display:none;">
+        <h2>Daily Answers Dashboard</h2>
+        <div class="adm-sum" id="admSummary"></div>
+        <button class="btn btn-ghost btn-sm" id="admSignOut" style="margin-bottom:14px;">Sign out</button>
+        <div id="admList"></div>
+      </div>`;
+    document.body.appendChild(wrap);
+
+    document.getElementById('admLoginBtn').onclick = async () => {
+      const email = document.getElementById('admEmail').value.trim();
+      const pass  = document.getElementById('admPass').value;
+      const errEl = document.getElementById('admErr');
+      try { await signInWithEmailAndPassword(auth, email, pass); }
+      catch(e){ errEl.textContent = 'Login failed — check email/password.'; }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      document.getElementById('admLogin').style.display = user ? 'none' : 'block';
+      document.getElementById('admDash').style.display  = user ? 'block' : 'none';
+      if (user) attachAdminListener();
+    });
+
+    document.getElementById('admSignOut').onclick = () => signOut(auth);
+
+    function attachAdminListener(){
+      onValue(ref(db, 'dailyAnswers'), (snap) => {
+        const data = snap.val() || {};
+        const listEl = document.getElementById('admList');
+        const sumEl = document.getElementById('admSummary');
+        const answered = Object.keys(data).length;
+        const yes = Object.values(data).filter(d=>d.answer==='YES').length;
+        const no  = Object.values(data).filter(d=>d.answer==='NO').length;
+        sumEl.innerHTML = `<div>Total Days: 91</div><div>Answered: ${answered}</div><div>YES: ${yes}</div><div>NO: ${no}</div><div>Remaining: ${91-answered}</div>`;
+        let rows = '';
+        for (let d=1; d<=91; d++){
+          const k = dayKey(d), rec = data[k];
+          rows += `<div class="adm-row">DAY ${String(d).padStart(2,'0')} — ${rec ? (rec.answer==='YES'?'❤️ YES':'NO') + ' — ' + rec.date : '<span style="opacity:.4">not answered</span>'}</div>`;
+        }
+        listEl.innerHTML = rows;
+      });
+    }
+  }
+
+  if (isAdmin) initAdmin(); else initGirlfriendUI();
 })();
 </script>
 </body>
