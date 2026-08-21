@@ -1262,6 +1262,16 @@ html.no-gate .gate{ display:none !important; }
     </div>
   </div>
 </div>
+<div id="loveDailyQuestion" class="loveDaily-card" style="display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:10001;width:calc(100% - 32px);max-width:380px;">
+  <div class="loveDaily-milestone" id="loveDailyMilestone" style="display:none;"></div>
+  <div class="loveDaily-label">Today's Little Question 💭</div>
+  <div class="loveDaily-question" id="loveDailyQ"></div>
+  <div class="loveDaily-buttons" id="loveDailyBtns">
+    <button class="loveDaily-yes" id="loveDailyYes">YES ❤️</button>
+    <button class="loveDaily-no" id="loveDailyNo">NO</button>
+  </div>
+  <div class="loveDaily-status" id="loveDailyStatus"></div>
+</div>
 
 <canvas id="cfc" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;"></canvas>
 
@@ -1679,15 +1689,7 @@ html.no-gate .gate{ display:none !important; }
       <div style="font-size:9px;text-transform:uppercase;letter-spacing:2.5px;color:var(--t3);margin-bottom:12px;">Next Birthday In</div>
       <div class="bd-cd" id="bdCd"></div>
     </div>
-    <div style="padding:0 16px 26px;position:relative;z-index:2;">
-  <div id="loveDailyQuestion" class="loveDaily-card" style="display:none;">
-    <div class="loveDaily-milestone" id="loveDailyMilestone" style="display:none;"></div>
-    <div class="loveDaily-label">Today's Little Question 💭</div>
-    <div class="loveDaily-question" id="loveDailyQ"></div>
-    <div class="loveDaily-buttons" id="loveDailyBtns">
-      <button class="loveDaily-yes" id="loveDailyYes">YES ❤️</button>
-      <button class="loveDaily-no" id="loveDailyNo">NO</button>
-    </div>
+
     <div class="loveDaily-status" id="loveDailyStatus"></div>
   </div>
 </div>
@@ -4452,6 +4454,13 @@ window.__bdayForceUnlock = function(){
 
     yesBtn.onclick = () => submit('YES');
     noBtn.onclick  = () => submit('NO');
+if (isAdmin) {
+  ['welcome','birthdayLock','standaloneCanvas','fallbackOverlay','bowStage'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  document.getElementById('app').style.opacity='1';
+}
+if (isAdmin) initAdmin(); else initGirlfriendUI();
 
     // reload saved state on refresh / reopen — same day only
     onValue(ref(db, 'dailyAnswers/' + key), (snap) => {
