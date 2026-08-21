@@ -1185,6 +1185,7 @@ html.no-gate .gate{ display:none !important; }
   .wish.is-in .wish__heroWrap::after{ animation:none; opacity:0; }
 }
 .loveDaily-card{background:var(--s1);border:1px solid var(--b2);border-radius:20px;padding:20px;text-align:center;backdrop-filter:blur(14px);max-width:480px;margin:0 auto;}
+html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
 .loveDaily-milestone{font-family:var(--fh);font-size:16px;color:var(--g1);margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed var(--b2);}
 .loveDaily-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g2);font-weight:700;margin-bottom:10px;}
 .loveDaily-question{font-family:var(--fh);font-size:19px;color:var(--t1);line-height:1.6;margin-bottom:16px;min-height:30px;}
@@ -4355,7 +4356,28 @@ window.__bdayForceUnlock = function(){
 </script>
 <script type="module">
 (function(){
-  const { db, ref, set, get, onValue, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut } = window.__bdayFB;
+  // Firebase's own <script type="module"> above loads its imports over the
+  // network before it can set window.__bdayFB. If that hasn't finished yet
+  // (slow connection, or this module happens to run first), wait for it
+  // instead of crashing on a null destructure.
+  function waitForFirebase(cb, triesLeft){
+    if (window.__bdayFB) return cb(window.__bdayFB);
+    if (triesLeft <= 0) {
+      console.error('Daily question: Firebase never became available — check your connection and reload.');
+      const card = document.getElementById('loveDailyQuestion');
+      if (card) {
+        card.style.display = 'block';
+        const statusEl = document.getElementById('loveDailyStatus');
+        if (statusEl) statusEl.textContent = "Couldn't connect — please check your internet and reload. ❤️";
+      }
+      return;
+    }
+    setTimeout(function(){ waitForFirebase(cb, triesLeft - 1); }, 150);
+  }
+  waitForFirebase(runDailyQuestionApp, 100); // ~15s max wait
+
+  function runDailyQuestionApp(FB){
+  const { db, ref, set, get, onValue, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut } = FB;
 
   /* 91 questions, index 0 = Day 1 ... index 90 = Day 91 */
   const QUESTIONS = [
@@ -4454,13 +4476,6 @@ window.__bdayForceUnlock = function(){
 
     yesBtn.onclick = () => submit('YES');
     noBtn.onclick  = () => submit('NO');
-if (isAdmin) {
-  ['welcome','birthdayLock','standaloneCanvas','fallbackOverlay','bowStage'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.style.display='none';
-  });
-  document.getElementById('app').style.opacity='1';
-}
-if (isAdmin) initAdmin(); else initGirlfriendUI();
 
     // reload saved state on refresh / reopen — same day only
     onValue(ref(db, 'dailyAnswers/' + key), (snap) => {
@@ -4524,6 +4539,7 @@ if (isAdmin) initAdmin(); else initGirlfriendUI();
   }
 
   if (isAdmin) initAdmin(); else initGirlfriendUI();
+  } // end runDailyQuestionApp
 })();
 </script>
 </body>
