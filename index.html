@@ -4543,7 +4543,19 @@ window.__bdayForceUnlock = function(){
       const pass  = document.getElementById('admPass').value;
       const errEl = document.getElementById('admErr');
       try { await signInWithEmailAndPassword(auth, email, pass); }
-      catch(e){ errEl.textContent = 'Login failed — check email/password.'; }
+      catch(e){
+        console.error('Admin login error:', e.code, e.message);
+        const hints = {
+          'auth/invalid-email': 'That email address looks invalid.',
+          'auth/user-not-found': 'No account exists with that email.',
+          'auth/wrong-password': 'Wrong password for that email.',
+          'auth/invalid-credential': 'Wrong email or password.',
+          'auth/operation-not-allowed': 'Email/Password sign-in is OFF in Firebase Console → Authentication → Sign-in method. Turn it on.',
+          'auth/too-many-requests': 'Too many failed attempts — wait a bit and try again.',
+          'auth/network-request-failed': 'Network error — check your internet connection.'
+        };
+        errEl.textContent = (hints[e.code] || ('Login failed: ' + (e.code || e.message))) ;
+      }
     };
 
     onAuthStateChanged(auth, (user) => {
