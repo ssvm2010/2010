@@ -437,6 +437,7 @@ html.bl-locked, html.bl-locked body{overflow:hidden!important;height:100%;}
   background-image:radial-gradient(ellipse 70% 50% at 15% 8%,rgba(147,51,234,.16) 0%,transparent 55%),radial-gradient(ellipse 55% 55% at 88% 90%,rgba(245,158,11,.12) 0%,transparent 55%);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;padding:32px;transition:opacity .65s ease,transform .65s ease;
+  overflow-y:auto;
 }
 #birthdayLock.bl-out{opacity:0;transform:scale(.97);pointer-events:none;}
 .bl-icon{font-size:64px;margin-bottom:14px;animation:cakeRock 2.4s ease infinite;filter:drop-shadow(0 0 22px rgba(212,168,83,.45));}
@@ -1184,7 +1185,7 @@ html.no-gate .gate{ display:none !important; }
   .wish.is-in .wish__heroWrap::before{ animation:none; opacity:.9; }
   .wish.is-in .wish__heroWrap::after{ animation:none; opacity:0; }
 }
-.loveDaily-card{background:var(--s1);border:1px solid var(--b2);border-radius:20px;padding:20px;text-align:center;backdrop-filter:blur(14px);max-width:480px;margin:0 auto;}
+.loveDaily-card{background:var(--s1);border:1px solid var(--b2);border-radius:20px;padding:20px;text-align:center;backdrop-filter:blur(14px);max-width:480px;margin:24px auto 0;}
 html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
 .loveDaily-milestone{font-family:var(--fh);font-size:16px;color:var(--g1);margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed var(--b2);}
 .loveDaily-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g2);font-weight:700;margin-bottom:10px;}
@@ -1246,6 +1247,16 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
     <div class="bl-box"><div class="bl-n" id="blSecs">00</div><div class="bl-l">Secs</div></div>
   </div>
   <div class="bl-unlocked-note" id="blUnlockedNote">🎉 Unlocking now…</div>
+  <div id="loveDailyQuestion" class="loveDaily-card" style="display:none;width:calc(100% - 32px);max-width:380px;position:relative;z-index:1;">
+    <div class="loveDaily-milestone" id="loveDailyMilestone" style="display:none;"></div>
+    <div class="loveDaily-label">Today's Little Question 💭</div>
+    <div class="loveDaily-question" id="loveDailyQ"></div>
+    <div class="loveDaily-buttons" id="loveDailyBtns">
+      <button class="loveDaily-yes" id="loveDailyYes">YES ❤️</button>
+      <button class="loveDaily-no" id="loveDailyNo">NO</button>
+    </div>
+    <div class="loveDaily-status" id="loveDailyStatus"></div>
+  </div>
 </div>
 
 <!-- HIDDEN EARLY ACCESS -->
@@ -1262,16 +1273,6 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
       <button class="btn btn-gold btn-sm" id="blPinSubmit" type="button">Unlock</button>
     </div>
   </div>
-</div>
-<div id="loveDailyQuestion" class="loveDaily-card" style="display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:10001;width:calc(100% - 32px);max-width:380px;">
-  <div class="loveDaily-milestone" id="loveDailyMilestone" style="display:none;"></div>
-  <div class="loveDaily-label">Today's Little Question 💭</div>
-  <div class="loveDaily-question" id="loveDailyQ"></div>
-  <div class="loveDaily-buttons" id="loveDailyBtns">
-    <button class="loveDaily-yes" id="loveDailyYes">YES ❤️</button>
-    <button class="loveDaily-no" id="loveDailyNo">NO</button>
-  </div>
-  <div class="loveDaily-status" id="loveDailyStatus"></div>
 </div>
 
 <canvas id="cfc" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;"></canvas>
@@ -1631,6 +1632,7 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
     <div class="sb-sec">🎉 Celebration</div>
     <div class="ni on" data-pg="bd" onclick="go('bd')"><span class="ni-ic">🎂</span>Birthday</div>
     <div class="ni" data-pg="dash" onclick="go('dash')"><span class="ni-ic">🏠</span>Dashboard</div>
+    <div class="ni" onclick="location.href = location.pathname + '?admin';"><span class="ni-ic">🛠️</span>Admin Dashboard</div>
     <div class="sb-sec">📚 School</div>
     <div class="ni" data-pg="school" onclick="go('school')"><span class="ni-ic">📚</span>School</div>
     <div class="ni" data-pg="timer" onclick="go('timer')"><span class="ni-ic">⏰</span>Study Timer</div>
@@ -1650,16 +1652,17 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
   <div class="sb-foot">
     <div class="ni" onclick="toggleTheme();closeSB()"><span class="ni-ic">🌙</span>Toggle Theme</div>
     <div class="ni" onclick="emojiRain();closeSB()"><span class="ni-ic">🌈</span>Emoji Rain!</div>
+    <div class="ni" onclick="relockSiteNow()"><span class="ni-ic">🔒</span>Lock Screen</div>
   </div>
 </div>
 
 <!-- BOTTOM NAV — bni-{id} pattern -->
 <div class="bnav">
-  <div class="bn-it on" id="bni-bd" onclick="go('bd')"><div class="bn-ic">🎂</div><div class="bn-lb">Birthday</div></div>
-  <div class="bn-it" id="bni-dash" onclick="go('dash')"><div class="bn-ic">🏠</div><div class="bn-lb">Home</div></div>
-  <div class="bn-it" id="bni-tod" onclick="go('tod')"><div class="bn-ic">🎲</div><div class="bn-lb">T or D</div></div>
-  <div class="bn-it" id="bni-personal" onclick="go('personal')"><div class="bn-ic">🌸</div><div class="bn-lb">Space</div></div>
-  <div class="bn-it" id="bni-games" onclick="go('games')"><div class="bn-ic">🎮</div><div class="bn-lb">Games</div></div>
+  <div class="bn-it on" id="bni-bd"><div class="bn-ic">🎂</div><div class="bn-lb">Birthday</div></div>
+  <div class="bn-it" id="bni-dash"><div class="bn-ic">🏠</div><div class="bn-lb">Home</div></div>
+  <div class="bn-it" id="bni-tod"><div class="bn-ic">🎲</div><div class="bn-lb">T or D</div></div>
+  <div class="bn-it" id="bni-personal"><div class="bn-ic">🌸</div><div class="bn-lb">Space</div></div>
+  <div class="bn-it" id="bni-games"><div class="bn-ic">🎮</div><div class="bn-lb">Games</div></div>
 </div>
 
 <button class="music-fab" id="musicFab" onclick="toggleMusic()">🎵</button>
@@ -1842,6 +1845,7 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
     <div class="card"><div class="cal-h"><button class="ic-btn" onclick="calPrev()">◀</button><div id="calTitle" style="font-weight:600;font-size:13px;color:var(--g1);"></div><button class="ic-btn" onclick="calNext()">▶</button></div><div class="cal-g" id="calDL"></div><div class="cal-g" id="calDs" style="margin-top:2px;"></div></div>
     <div class="exam-cd"><div class="lbl">📝 Next Exam</div><div class="exam-days" id="examDL">—</div><div style="font-size:11px;color:var(--t3);" id="examNm">Set in School</div></div>
   </div>
+  <button class="btn btn-outline btn-sm" style="width:100%;margin-top:14px;" onclick="location.href = location.pathname + '?admin';">🛠️ Admin Dashboard</button>
 </div>
 
 <!-- SCHOOL -->
@@ -3636,7 +3640,7 @@ function armReplay(){
   requestAnimationFrame(() => replay.classList.add('is-shown'));
   requestAnimationFrame(() => { musicToggle.classList.add('is-shown'); memoriesBtn.classList.add('is-shown'); });
   memoriesBtn.hidden = false;
-  setTimeout(() => { if (typeof window.__bowTreeDone === 'function') window.__bowTreeDone(); }, 3200);
+  window.__bowTreeAutoTimer = setTimeout(() => { if (typeof window.__bowTreeDone === 'function') window.__bowTreeDone(); }, 3200);
 }
 
 /* back to Act 1, ready to be drawn again */
@@ -3699,10 +3703,15 @@ musicToggle.addEventListener('click', () => {
 
 /* memory lane + message wall overlay */
 memoriesBtn.addEventListener('click', () => {
+  // the tree screen was about to auto-advance into the main app — cancel that
+  // while the person is actually looking at the memories/photos section
+  if (window.__bowTreeAutoTimer) { clearTimeout(window.__bowTreeAutoTimer); window.__bowTreeAutoTimer = null; }
   memories.classList.add('is-open'); memories.setAttribute('aria-hidden', 'false');
 });
 memoriesClose.addEventListener('click', () => {
   memories.classList.remove('is-open'); memories.setAttribute('aria-hidden', 'true');
+  // give a moment to finish reading, then continue into the app
+  window.__bowTreeAutoTimer = setTimeout(() => { if (typeof window.__bowTreeDone === 'function') window.__bowTreeDone(); }, 1500);
 });
 
 /* ============================================================
@@ -3900,6 +3909,12 @@ function go(id){
   closeSB();
   if(PAGE_INIT[id])try{PAGE_INIT[id]();}catch(e){console.warn(id,e);}
 }
+// defensive rebind — guarantees bottom-nav taps always work even if an
+// inline onclick attribute ever fails to fire (older iOS Safari edge case)
+document.querySelectorAll('.bnav .bn-it').forEach(el=>{
+  const id = el.id.replace('bni-','');
+  el.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); go(id); }, {passive:false});
+});
 
 // CONFETTI
 const cfc=document.getElementById('cfc'),cfCtx=cfc.getContext('2d');
@@ -4251,6 +4266,11 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){const ov=document.g
 
 // THEME
 function toggleTheme(){document.body.classList.toggle('light');S('theme',document.body.classList.contains('light')?'light':'dark');}
+function relockSiteNow(){
+  try { localStorage.removeItem('bday_early_access_v1'); } catch(e){}
+  closeSB();
+  location.reload();
+}
 if(G('theme','dark')==='light')document.body.classList.add('light');
 
 // INIT
@@ -4485,6 +4505,14 @@ window.__bdayForceUnlock = function(){
 
   /* ================= ADMIN DASHBOARD (?admin) ================= */
   function initAdmin(){
+    // make sure nothing (lock screen, canvases, intro overlays) sits on top of the admin panel
+    ['welcome','birthdayLock','standaloneCanvas','fallbackOverlay','bowStage','blPinModal'].forEach(id=>{
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    document.documentElement.classList.remove('bl-locked');
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.style.opacity = '1';
+
     const wrap = document.createElement('div');
     wrap.className = 'loveDaily-admin';
     wrap.innerHTML = `
@@ -4499,9 +4527,16 @@ window.__bdayForceUnlock = function(){
         <h2>Daily Answers Dashboard</h2>
         <div class="adm-sum" id="admSummary"></div>
         <button class="btn btn-ghost btn-sm" id="admSignOut" style="margin-bottom:14px;">Sign out</button>
+        <button class="btn btn-outline btn-sm" id="admRelockBtn" style="margin-bottom:14px;margin-left:8px;">🔒 Re-lock site (testing)</button>
         <div id="admList"></div>
       </div>`;
     document.body.appendChild(wrap);
+    const relockBtn = document.getElementById('admRelockBtn');
+    if (relockBtn) relockBtn.onclick = () => {
+      try { localStorage.removeItem('bday_early_access_v1'); } catch(e){}
+      alert('Re-locked ✅ — on THIS same device/browser, open the site again (without ?admin, or a fresh tab) and the lock/PIN screen will show again. This does not affect other devices — the timer countdown still governs the real unlock date for everyone.');
+    };
+
 
     document.getElementById('admLoginBtn').onclick = async () => {
       const email = document.getElementById('admEmail').value.trim();
