@@ -4303,9 +4303,12 @@ window.addEventListener('DOMContentLoaded',()=>{
   var _pin = ['2','7','1','1'].join('');
   function correctPin(v){ return v === _pin; }
 
-  var LS_KEY = 'bday_early_access_v1';
-  function hasEarlyAccess(){ try{ return localStorage.getItem(LS_KEY)==='1'; }catch(e){ return false; } }
-  function grantEarlyAccess(){ try{ localStorage.setItem(LS_KEY,'1'); }catch(e){} }
+  // Early access unlock is intentionally NOT persisted (no localStorage) —
+  // every fresh page load / refresh must show the lock screen again and
+  // require the PIN once more. Unlocking only affects the current page view.
+  var _earlyAccessGranted = false;
+  function hasEarlyAccess(){ return _earlyAccessGranted; }
+  function grantEarlyAccess(){ _earlyAccessGranted = true; }
   function isUnlocked(){ return Date.now() >= UNLOCK_TIME || hasEarlyAccess(); }
 
   var lockEl,cdDays,cdHours,cdMins,cdSecs,note,dot,modal,pinInput,pinErr,pinSubmit,pinCancel;
@@ -4356,7 +4359,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     }
   }
 window.__bdayForceUnlock = function(){
-  try{ localStorage.setItem(LS_KEY,'1'); }catch(e){}
+  grantEarlyAccess();
   unlockSite();
 };
   function init(){
@@ -4570,6 +4573,7 @@ window.__bdayForceUnlock = function(){
       </div>
       <div id="admDash" style="display:none;">
         <h2>Daily Answers Dashboard</h2>
+        <div id="admToday" style="background:var(--s2);border:1px solid var(--b2);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:13px;"></div>
         <div class="adm-sum" id="admSummary"></div>
         <button class="btn btn-ghost btn-sm" id="admSignOut" style="margin-bottom:14px;">Sign out</button>
         <button class="btn btn-outline btn-sm" id="admRelockBtn" style="margin-bottom:14px;margin-left:8px;">🔒 Re-lock site (testing)</button>
@@ -4580,8 +4584,7 @@ window.__bdayForceUnlock = function(){
     document.body.appendChild(wrap);
     const relockBtn = document.getElementById('admRelockBtn');
     if (relockBtn) relockBtn.onclick = () => {
-      try { localStorage.removeItem('bday_early_access_v1'); } catch(e){}
-      alert('Re-locked ✅ — on THIS same device/browser, open the site again (without ?admin, or a fresh tab) and the lock/PIN screen will show again. This does not affect other devices — the timer countdown still governs the real unlock date for everyone.');
+      alert('The lock screen no longer stays unlocked after a refresh — every fresh page load already shows the lock/PIN screen again automatically. Nothing to do here anymore.');
     };
 
 
@@ -4639,10 +4642,24 @@ window.__bdayForceUnlock = function(){
         const data = snap.val() || {};
         const listEl = document.getElementById('admList');
         const sumEl = document.getElementById('admSummary');
+        const todayEl = document.getElementById('admToday');
         const answered = Object.keys(data).length;
         const yes = Object.values(data).filter(d=>d.answer==='YES').length;
         const no  = Object.values(data).filter(d=>d.answer==='NO').length;
         sumEl.innerHTML = `<div>Total Days: 91</div><div>Answered: ${answered}</div><div>YES: ${yes}</div><div>NO: ${no}</div><div>Remaining: ${91-answered}</div>`;
+
+        if (todayEl) {
+          const todayDay = getDayIndex();
+          const todayKey = dayKey(todayDay);
+          const todayRec = data[todayKey];
+          if (todayRec) {
+            const who = todayRec.name ? `<b>${todayRec.name}</b>` : '<span style="opacity:.6">(no name given)</span>';
+            todayEl.innerHTML = `📅 <b>Today (Day ${String(todayDay).padStart(2,'0')})</b> — ${todayRec.answer==='YES'?'❤️ YES':'NO'} — answered by ${who} at ${todayRec.date}`;
+          } else {
+            todayEl.innerHTML = `📅 <b>Today (Day ${String(todayDay).padStart(2,'0')})</b> — <span style="opacity:.6">not answered yet</span>`;
+          }
+        }
+
         let rows = '';
         for (let d=1; d<=91; d++){
           const k = dayKey(d), rec = data[k];
