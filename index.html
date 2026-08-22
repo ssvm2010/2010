@@ -1255,6 +1255,11 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
       <button class="loveDaily-yes" id="loveDailyYes">YES ❤️</button>
       <button class="loveDaily-no" id="loveDailyNo">NO</button>
     </div>
+    <div id="loveDailyNameStep" style="display:none;margin-top:12px;">
+      <input id="loveDailyNameInput" type="text" placeholder="Your name?" maxlength="40"
+        style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid var(--b2);background:var(--s1);color:var(--t1);font-size:14px;margin-bottom:8px;">
+      <button class="loveDaily-yes" id="loveDailyNameSubmit" style="width:100%;">Confirm</button>
+    </div>
     <div class="loveDaily-status" id="loveDailyStatus"></div>
   </div>
 </div>
@@ -4448,6 +4453,17 @@ window.__bdayForceUnlock = function(){
   }
   function dayKey(n){ return 'day' + String(n).padStart(2,'0'); }
 
+  /* ---- a persistent per-browser device id, so admin can see who's on which device ---- */
+  function getDeviceId(){
+    try {
+      let id = localStorage.getItem('bday_device_id');
+      if (!id) { id = 'dev_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); localStorage.setItem('bday_device_id', id); }
+      return id;
+    } catch(e){ return 'dev_unknown'; }
+  }
+  function getSavedName(){ try { return localStorage.getItem('bday_person_name') || ''; } catch(e){ return ''; } }
+  function saveName(n){ try { localStorage.setItem('bday_person_name', n); } catch(e){} }
+
   const isAdmin = new URLSearchParams(location.search).has('admin');
 
   /* ================= GIRLFRIEND-FACING UI ================= */
@@ -4460,8 +4476,16 @@ window.__bdayForceUnlock = function(){
     const noBtn  = document.getElementById('loveDailyNo');
     const statusEl = document.getElementById('loveDailyStatus');
     const msEl = document.getElementById('loveDailyMilestone');
+    const btnsEl = document.getElementById('loveDailyBtns');
+    const nameStepEl = document.getElementById('loveDailyNameStep');
+    const nameInputEl = document.getElementById('loveDailyNameInput');
+    const nameSubmitBtn = document.getElementById('loveDailyNameSubmit');
     if (!card) return;
     card.style.display = 'block';
+
+    const deviceId = getDeviceId();
+    // log this device's visit so admin can see who's on which device and when
+    try { set(ref(db, 'deviceLogins/' + deviceId), { lastSeen: Date.now(), lastSeenText: new Date().toLocaleString(), name: getSavedName() || null }); } catch(e){}
 
     let question = QUESTIONS[day-1];
     if (day === 90) question = "One more day… ready? 🔐";
@@ -4470,36 +4494,56 @@ window.__bdayForceUnlock = function(){
 
     if (MILESTONES[day]) { msEl.textContent = MILESTONES[day]; msEl.style.display='block'; }
 
-    function lockButtons(answer){
+    function lockButtons(answer, name){
       yesBtn.disabled = true; noBtn.disabled = true;
-      statusEl.textContent = day===90 ? "Tomorrow. ❤️" : (answer==='YES' ? "Answer saved 🔐" : "Okay… your answer is safe with me. ❤️");
+      btnsEl.style.display = 'none';
+      nameStepEl.style.display = 'none';
+      const who = name ? ` (${name})` : '';
+      statusEl.textContent = day===90 ? "Tomorrow. ❤️" : (answer==='YES' ? `Answer saved 🔐${who}` : `Okay… your answer is safe with me. ❤️${who}`);
     }
 
-    async function submit(answer){
-      yesBtn.disabled = true; noBtn.disabled = true;
+    let pendingAnswer = null;
+    function chooseAnswer(answer){
+      pendingAnswer = answer;
+      btnsEl.style.display = 'none';
+      nameStepEl.style.display = 'block';
+      nameInputEl.value = getSavedName();
+      nameInputEl.focus();
+    }
+
+    async function submitWithName(){
+      const name = nameInputEl.value.trim();
+      if (!name) { nameInputEl.focus(); return; }
+      saveName(name);
+      nameSubmitBtn.disabled = true;
       statusEl.textContent = 'Saving…';
       try {
         const nodeRef = ref(db, 'dailyAnswers/' + key);
         const existing = await get(nodeRef);
-        if (existing.exists()) { lockButtons(existing.val().answer); return; }
+        if (existing.exists()) { lockButtons(existing.val().answer, existing.val().name); return; }
         await set(nodeRef, {
-          question, answer, timestamp: Date.now(),
+          question, answer: pendingAnswer, name, deviceId,
+          timestamp: Date.now(),
           date: new Date().toLocaleString()
         });
-        lockButtons(answer);
-        if (day === 91 && answer === 'YES' && window.__bdayForceUnlock) window.__bdayForceUnlock();
+        lockButtons(pendingAnswer, name);
+        if (day === 91 && pendingAnswer === 'YES' && window.__bdayForceUnlock) window.__bdayForceUnlock();
       } catch (e) {
         statusEl.textContent = 'Something went wrong. Please try again. ❤️';
-        yesBtn.disabled = false; noBtn.disabled = false;
+        nameSubmitBtn.disabled = false;
+        btnsEl.style.display = 'flex';
+        nameStepEl.style.display = 'none';
       }
     }
 
-    yesBtn.onclick = () => submit('YES');
-    noBtn.onclick  = () => submit('NO');
+    yesBtn.onclick = () => chooseAnswer('YES');
+    noBtn.onclick  = () => chooseAnswer('NO');
+    nameSubmitBtn.onclick = submitWithName;
+    nameInputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitWithName(); });
 
     // reload saved state on refresh / reopen — same day only
     onValue(ref(db, 'dailyAnswers/' + key), (snap) => {
-      if (snap.exists()) lockButtons(snap.val().answer);
+      if (snap.exists()) lockButtons(snap.val().answer, snap.val().name);
     }, { onlyOnce: true });
   }
 
@@ -4529,6 +4573,8 @@ window.__bdayForceUnlock = function(){
         <button class="btn btn-ghost btn-sm" id="admSignOut" style="margin-bottom:14px;">Sign out</button>
         <button class="btn btn-outline btn-sm" id="admRelockBtn" style="margin-bottom:14px;margin-left:8px;">🔒 Re-lock site (testing)</button>
         <div id="admList"></div>
+        <h2 style="margin-top:20px;">Devices</h2>
+        <div id="admDevices"></div>
       </div>`;
     document.body.appendChild(wrap);
     const relockBtn = document.getElementById('admRelockBtn');
@@ -4578,9 +4624,25 @@ window.__bdayForceUnlock = function(){
         let rows = '';
         for (let d=1; d<=91; d++){
           const k = dayKey(d), rec = data[k];
-          rows += `<div class="adm-row">DAY ${String(d).padStart(2,'0')} — ${rec ? (rec.answer==='YES'?'❤️ YES':'NO') + ' — ' + rec.date : '<span style="opacity:.4">not answered</span>'}</div>`;
+          if (rec) {
+            const who = rec.name ? `<b>${rec.name}</b>` : '<span style="opacity:.5">(no name)</span>';
+            const dev = rec.deviceId ? ` · <span style="opacity:.5;font-size:10px;">${rec.deviceId}</span>` : '';
+            rows += `<div class="adm-row">DAY ${String(d).padStart(2,'0')} — ${rec.answer==='YES'?'❤️ YES':'NO'} — ${who}${dev} — ${rec.date}</div>`;
+          } else {
+            rows += `<div class="adm-row">DAY ${String(d).padStart(2,'0')} — <span style="opacity:.4">not answered</span></div>`;
+          }
         }
         listEl.innerHTML = rows;
+      });
+      onValue(ref(db, 'deviceLogins'), (snap) => {
+        const data = snap.val() || {};
+        const devEl = document.getElementById('admDevices');
+        if (!devEl) return;
+        const rows = Object.entries(data)
+          .sort((a,b) => (b[1].lastSeen||0) - (a[1].lastSeen||0))
+          .map(([id, d]) => `<div class="adm-row">${d.name ? '<b>'+d.name+'</b> — ' : ''}<span style="opacity:.6;font-size:11px;">${id}</span> — last seen ${d.lastSeenText || '—'}</div>`)
+          .join('');
+        devEl.innerHTML = rows || '<div class="adm-row" style="opacity:.5;">No devices logged yet.</div>';
       });
     }
   }
