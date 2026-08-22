@@ -450,6 +450,33 @@ html.bl-locked, html.bl-locked body{overflow:hidden!important;height:100%;}
 .bl-n{font-family:var(--ff);font-size:32px;font-weight:700;color:var(--g1);line-height:1;}
 .bl-l{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);margin-top:5px;}
 .bl-unlocked-note{font-size:11px;color:var(--grn);margin-top:18px;display:none;}
+.bl-unlocked-note.bl-final{font-size:13px;line-height:1.7;}
+.bl-unlocked-note.bl-final .blf-lock{font-size:30px;display:block;margin-bottom:8px;filter:drop-shadow(0 0 16px rgba(52,255,196,.5));}
+.bl-unlocked-note.bl-final .blf-title{font-family:var(--ff);font-style:italic;font-size:20px;font-weight:700;color:var(--g1);display:block;margin-bottom:6px;}
+.bl-unlocked-note.bl-final .blf-sub{font-size:13px;color:var(--t2);display:block;}
+
+/* Subtle greeting */
+.bl-greet{font-family:var(--fh);font-size:16px;color:var(--g1);opacity:.9;margin:-18px 0 22px;}
+
+/* Memory Vault */
+.bl-vault{background:var(--s1);border:1px solid var(--b2);border-radius:20px;padding:18px 20px;
+  backdrop-filter:blur(14px);max-width:380px;width:calc(100% - 32px);margin:22px auto 0;position:relative;z-index:1;}
+.bl-vault-title{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g2);font-weight:700;margin-bottom:12px;}
+.bl-vault-dots{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:10px;max-height:54px;overflow:hidden;}
+.bl-vault-dot{width:6px;height:6px;border-radius:50%;background:var(--b1);border:1px solid var(--b2);transition:all .3s var(--easeb);flex-shrink:0;}
+.bl-vault-dot.on{background:linear-gradient(135deg,var(--g1),var(--g2));border-color:transparent;box-shadow:0 0 6px rgba(212,168,83,.6);}
+.bl-vault-dot.today{background:var(--r1);border-color:var(--r1);box-shadow:0 0 8px rgba(245,158,11,.65);animation:streakPop 1.6s ease infinite;}
+.bl-vault-count{font-family:var(--ff);font-size:15px;color:var(--t1);font-weight:600;margin-bottom:4px;}
+.bl-vault-tag{font-size:11px;color:var(--t3);font-style:italic;}
+
+/* Tomorrow's Hint */
+.bl-hint{background:linear-gradient(135deg,rgba(245,215,142,.09),rgba(212,168,83,.05));border:1px solid var(--b2);
+  border-radius:16px;padding:14px 18px;max-width:380px;width:100%;margin:14px auto 0;text-align:center;}
+.bl-hint-title{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g2);font-weight:700;margin-bottom:8px;}
+.bl-hint-text{font-family:var(--fh);font-size:15px;color:var(--t1);line-height:1.5;}
+
+/* Daily secret intro line */
+.loveDaily-intro{font-size:12px;color:var(--t3);line-height:1.6;margin:-4px 0 14px;font-style:italic;}
 
 /* HIDDEN EARLY ACCESS dot — nearly invisible, bottom-right corner */
 .bl-dot{position:fixed;bottom:6px;right:6px;width:16px;height:16px;z-index:10001;cursor:default;
@@ -1196,7 +1223,7 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
 .loveDaily-no{background:var(--s1);border:1px solid var(--b2);color:var(--t2);}
 .loveDaily-yes:disabled,.loveDaily-no:disabled{opacity:.45;cursor:default;transform:none!important;}
 .loveDaily-yes:not(:disabled):active,.loveDaily-no:not(:disabled):active{transform:scale(.95);}
-.loveDaily-status{font-size:12px;color:var(--g1);margin-top:12px;min-height:16px;}
+.loveDaily-status{font-size:12px;color:var(--g1);margin-top:12px;min-height:16px;white-space:pre-line;line-height:1.6;}
 .loveDaily-admin{position:fixed;inset:0;background:var(--d1);z-index:20000;overflow-y:auto;padding:20px 16px 60px;font-family:var(--fb);}
 .loveDaily-admin h2{font-family:var(--ff);color:var(--g1);margin-bottom:14px;}
 .loveDaily-admin .adm-sum{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:18px;}
@@ -1239,6 +1266,7 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
   <div class="bl-icon">🔒</div>
   <div class="bl-title">Something Special<br>Is Waiting For You…</div>
   <div class="bl-sub">Sarvika's celebration is under wraps just a little longer ✨</div>
+  <div class="bl-greet" id="blGreet" style="display:none;"></div>
   <div class="bl-label">Unlocking In</div>
   <div class="bl-cd">
     <div class="bl-box"><div class="bl-n" id="blDays">00</div><div class="bl-l">Days</div></div>
@@ -1247,9 +1275,19 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
     <div class="bl-box"><div class="bl-n" id="blSecs">00</div><div class="bl-l">Secs</div></div>
   </div>
   <div class="bl-unlocked-note" id="blUnlockedNote">🎉 Unlocking now…</div>
+
+  <!-- MEMORY VAULT — daily progress journey -->
+  <div class="bl-vault" id="blVault" style="display:none;">
+    <div class="bl-vault-title">🔐 Memory Vault</div>
+    <div class="bl-vault-dots" id="blVaultDots"></div>
+    <div class="bl-vault-count" id="blVaultCount">0 / 91 moments unlocked 💜</div>
+    <div class="bl-vault-tag">Every answer becomes part of something special.</div>
+  </div>
+
   <div id="loveDailyQuestion" class="loveDaily-card" style="display:none;width:calc(100% - 32px);max-width:380px;position:relative;z-index:1;">
     <div class="loveDaily-milestone" id="loveDailyMilestone" style="display:none;"></div>
-    <div class="loveDaily-label">Today's Little Question 💭</div>
+    <div class="loveDaily-label">Today's Little Secret ✨</div>
+    <div class="loveDaily-intro" id="loveDailyIntro">Innaiku oru small question… answer pannina next clue unlock aagum 👀</div>
     <div class="loveDaily-question" id="loveDailyQ"></div>
     <div class="loveDaily-buttons" id="loveDailyBtns">
       <button class="loveDaily-yes" id="loveDailyYes">YES ❤️</button>
@@ -1261,6 +1299,12 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
       <button class="loveDaily-yes" id="loveDailyNameSubmit" style="width:100%;">Confirm</button>
     </div>
     <div class="loveDaily-status" id="loveDailyStatus"></div>
+  </div>
+
+  <!-- TOMORROW'S HINT — revealed only after today's secret is answered -->
+  <div class="bl-hint" id="blHint" style="display:none;">
+    <div class="bl-hint-title">Tomorrow's Hint 👀</div>
+    <div class="bl-hint-text" id="blHintText"></div>
   </div>
 </div>
 
@@ -4319,7 +4363,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   // ---- COUNTDOWN TIMER ----
   function renderCountdown(){
     var diff = UNLOCK_TIME - Date.now();
-    if (diff <= 0){ unlockSite(); return; }
+    if (diff <= 0){ unlockSite(true); return; }
     var d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000),
         m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
     if(cdDays) cdDays.textContent=pad(d);
@@ -4329,13 +4373,25 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
 
   // ---- AUTOMATIC MIDNIGHT UNLOCK ----
-  function unlockSite(){
+  // ceremony=true only for the real, natural end-of-countdown unlock — gives a
+  // brief "the wait is over" reveal moment before the lock screen fades away.
+  // PIN/admin/early-access/day-91 forced unlocks stay instant, as before.
+  function unlockSite(ceremony){
     if(tickTimer){ clearInterval(tickTimer); tickTimer=null; }
     document.documentElement.classList.remove('bl-locked');
     if(lockEl){
-      if(note) note.style.display='block';
-      lockEl.classList.add('bl-out');
-      setTimeout(function(){ lockEl.style.display='none'; }, 700);
+      if(note){
+        if(ceremony){
+          note.innerHTML = '<span class="blf-lock">🔓</span><span class="blf-title">The Wait Is Over</span><span class="blf-sub">Sarvika, you made it to the end. ❤️</span>';
+          note.classList.add('bl-final');
+        }
+        note.style.display='block';
+      }
+      var fadeDelay = ceremony ? 2600 : 0;
+      setTimeout(function(){
+        lockEl.classList.add('bl-out');
+        setTimeout(function(){ lockEl.style.display='none'; }, 700);
+      }, fadeDelay);
     }
   }
   function showLocked(){
@@ -4445,6 +4501,30 @@ window.__bdayForceUnlock = function(){
 
   const MILESTONES = { 30: "30 days already… and you're still here. ❤️", 60: "Only 31 days left… 🔐", 75: "75 days… still choosing? ❤️" };
 
+  const TOTAL_DAYS = 91;
+
+  /* Tomorrow's Hint — a rotating pool of vague, curiosity-building teasers.
+     Not tied 1:1 to the real question text (so nothing is ever spoiled),
+     but the day index keeps the same visitor seeing a *different* hint
+     on different days. */
+  const TOMORROW_HINTS = [
+    "Tomorrow's question is about something you probably didn't expect… 👀",
+    "It's a small one tomorrow… but it might make you smile. 😊",
+    "Tomorrow touches on a memory. Just a little one. 🌸",
+    "Something about *you* tomorrow… not me. 👀",
+    "Tomorrow's question is a little bit cheeky. 😏",
+    "It's about a feeling tomorrow — not a fact. 💭",
+    "Tomorrow might make you pause for a second before answering. ⏳",
+    "It's about us tomorrow… kind of. 💜",
+    "A soft one tomorrow. Take your time with it. 🌙",
+    "Tomorrow's question has a tiny surprise in it. ✨",
+    "It's simple tomorrow — but simple ones matter most. 🤍",
+    "Tomorrow's is about something you do without noticing. 👀",
+    "A little nostalgic one is coming tomorrow. 🎞️",
+    "Tomorrow's question might make you smile a little too much. 😳",
+    "It's a 'just between us' kind of question tomorrow. 🤫"
+  ];
+
   /* ---- day index, bridged off the SAME unlock date used by the lock screen ---- */
   // window.__bdayUnlockTime is exposed in Step 7 from the birthday-lock script's own UNLOCK_TIME.
   function getDayIndex(){
@@ -4483,8 +4563,17 @@ window.__bdayForceUnlock = function(){
     const nameStepEl = document.getElementById('loveDailyNameStep');
     const nameInputEl = document.getElementById('loveDailyNameInput');
     const nameSubmitBtn = document.getElementById('loveDailyNameSubmit');
+    const greetEl = document.getElementById('blGreet');
+    const vaultEl = document.getElementById('blVault');
+    const vaultDotsEl = document.getElementById('blVaultDots');
+    const vaultCountEl = document.getElementById('blVaultCount');
+    const hintEl = document.getElementById('blHint');
+    const hintTextEl = document.getElementById('blHintText');
     if (!card) return;
     card.style.display = 'block';
+
+    // subtle personal touch — makes this feel like *her* page, not a generic one
+    if (greetEl) { greetEl.textContent = `Sarvika's Day ${day} ✨`; greetEl.style.display = 'block'; }
 
     const deviceId = getDeviceId();
     // log this device's visit so admin can see who's on which device and when
@@ -4497,12 +4586,45 @@ window.__bdayForceUnlock = function(){
 
     if (MILESTONES[day]) { msEl.textContent = MILESTONES[day]; msEl.style.display='block'; }
 
+    /* ---- Memory Vault — the 89/91-day journey, one dot per day ---- */
+    function renderVault(answeredToday){
+      if (!vaultEl || !vaultDotsEl || !vaultCountEl) return;
+      vaultEl.style.display = 'block';
+      const unlocked = Math.min(TOTAL_DAYS, Math.max(0, day - 1) + (answeredToday ? 1 : 0));
+      let dotsHtml = '';
+      for (let i = 1; i <= TOTAL_DAYS; i++){
+        let cls = 'bl-vault-dot';
+        if (i <= unlocked) cls += ' on';
+        else if (i === day && !answeredToday) cls += ' today';
+        dotsHtml += `<div class="${cls}"></div>`;
+      }
+      vaultDotsEl.innerHTML = dotsHtml;
+      vaultCountEl.textContent = `You've unlocked ${unlocked} / ${TOTAL_DAYS} moments 💜`;
+    }
+    renderVault(false);
+
+    /* ---- Tomorrow's Hint ---- */
+    function revealHint(){
+      if (!hintEl || !hintTextEl) return;
+      if (day >= TOTAL_DAYS) { hintEl.style.display = 'none'; return; }
+      hintTextEl.textContent = TOMORROW_HINTS[day % TOMORROW_HINTS.length];
+      hintEl.style.display = 'block';
+    }
+
     function lockButtons(answer, name){
       yesBtn.disabled = true; noBtn.disabled = true;
       btnsEl.style.display = 'none';
       nameStepEl.style.display = 'none';
       const who = name ? ` (${name})` : '';
-      statusEl.textContent = day===90 ? "Tomorrow. ❤️" : (answer==='YES' ? `Answer saved 🔐${who}` : `Okay… your answer is safe with me. ❤️${who}`);
+      if (day === 91){
+        statusEl.textContent = `💗 That was the last one. Thank you for choosing me, every single day.${who}`;
+      } else if (day === 90){
+        statusEl.textContent = `🔐 Sealed. Tomorrow is Day 91 — the last one. ❤️${who}`;
+      } else {
+        statusEl.textContent = `🔐 Today's answer has been sealed.\nCome back tomorrow for Day ${day + 1}.${who}`;
+      }
+      renderVault(true);
+      revealHint();
     }
 
     let pendingAnswer = null;
