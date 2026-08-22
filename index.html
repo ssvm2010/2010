@@ -1210,17 +1210,17 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
     getDatabase, ref, set, get, onValue
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
   import {
-    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyBSVuH1Hiw0fx1UQrQPTxn3dV-WTv0aIrw",
+    apiKey: "AIzaSyBSVuH1HiwOfx1UQrQPTxn3dV-WTv0aIrw",
     authDomain: "hbdshy-ad200.firebaseapp.com",
     databaseURL: "https://hbdshy-ad200-default-rtdb.firebaseio.com",
     projectId: "hbdshy-ad200",
     storageBucket: "hbdshy-ad200.firebasestorage.app",
     messagingSenderId: "668473968287",
-    appId: "1:668473968287:web:8acd1b3ca594deacf84aa", // ← verify against console
+    appId: "1:668473968287:web:8acd1b3ca594deacfd84aa",
     measurementId: "G-11FZKNCJD9"
   };
 
@@ -1230,7 +1230,7 @@ html:not(.bl-locked) #loveDailyQuestion{display:none!important;}
 
   // Exposed once, globally, so the daily-question script (loaded later, before
   // </body>) can use the SAME app/db instead of re-initializing Firebase.
-  window.__bdayFB = { db, ref, set, get, onValue, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut };
+  window.__bdayFB = { db, ref, set, get, onValue, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail };
 </script>
 </head>
 <body>
@@ -4402,7 +4402,7 @@ window.__bdayForceUnlock = function(){
   waitForFirebase(runDailyQuestionApp, 100); // ~15s max wait
 
   function runDailyQuestionApp(FB){
-  const { db, ref, set, get, onValue, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut } = FB;
+  const { db, ref, set, get, onValue, auth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } = FB;
 
   /* 91 questions, index 0 = Day 1 ... index 90 = Day 91 */
   const QUESTIONS = [
@@ -4565,6 +4565,7 @@ window.__bdayForceUnlock = function(){
         <input id="admEmail" type="email" placeholder="Email"><br>
         <input id="admPass" type="password" placeholder="Password"><br>
         <button class="btn btn-gold btn-sm" id="admLoginBtn">Sign in</button>
+        <button class="btn btn-ghost btn-sm" id="admForgotBtn" type="button" style="margin-left:8px;">Forgot password?</button>
         <div id="admErr" style="color:#ff8080;font-size:12px;margin-top:8px;"></div>
       </div>
       <div id="admDash" style="display:none;">
@@ -4598,9 +4599,30 @@ window.__bdayForceUnlock = function(){
           'auth/invalid-credential': 'Wrong email or password.',
           'auth/operation-not-allowed': 'Email/Password sign-in is OFF in Firebase Console → Authentication → Sign-in method. Turn it on.',
           'auth/too-many-requests': 'Too many failed attempts — wait a bit and try again.',
-          'auth/network-request-failed': 'Network error — check your internet connection.'
+          'auth/network-request-failed': 'Network error — check your internet connection.',
+          'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'The Firebase apiKey in this file is invalid — re-copy it from Firebase Console → Project settings.'
         };
         errEl.textContent = (hints[e.code] || ('Login failed: ' + (e.code || e.message))) ;
+      }
+    };
+
+    document.getElementById('admForgotBtn').onclick = async () => {
+      const email = document.getElementById('admEmail').value.trim();
+      const errEl = document.getElementById('admErr');
+      if (!email) { errEl.style.color = '#ff8080'; errEl.textContent = 'Type your email above first, then tap "Forgot password?".'; return; }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        errEl.style.color = '#8aff9e';
+        errEl.textContent = 'Reset link sent to ' + email + ' — check your inbox (and spam folder).';
+      } catch(e){
+        console.error('Password reset error:', e.code, e.message);
+        errEl.style.color = '#ff8080';
+        const hints = {
+          'auth/invalid-email': 'That email address looks invalid.',
+          'auth/user-not-found': 'No account exists with that email.',
+          'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'The Firebase apiKey in this file is invalid — re-copy it from Firebase Console → Project settings.'
+        };
+        errEl.textContent = hints[e.code] || ('Could not send reset email: ' + (e.code || e.message));
       }
     };
 
